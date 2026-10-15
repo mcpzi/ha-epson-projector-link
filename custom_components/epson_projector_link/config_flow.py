@@ -6,10 +6,14 @@ import logging
 from homeassistant import config_entries
 from homeassistant.const import CONF_HOST
 from homeassistant.const import CONF_NAME
+from homeassistant.const import CONF_PASSWORD
 from homeassistant.const import CONF_SCAN_INTERVAL
 from homeassistant.const import STATE_ON
 from homeassistant.core import callback
 import homeassistant.helpers.config_validation as cv
+from homeassistant.helpers.selector import TextSelector
+from homeassistant.helpers.selector import TextSelectorConfig
+from homeassistant.helpers.selector import TextSelectorType
 import voluptuous as vol
 
 from . import create_projector
@@ -21,6 +25,7 @@ from .const import DOMAIN
 from .const import PROPERTY_TO_ATTRIBUTE_NAME_MAP
 from .projector.const import PROPERTY_POWER
 from .projector.const import PROPERTY_SERIAL_NUMBER
+from .projector.exceptions import ProjectorAuthError
 from .projector.exceptions import ProjectorErrorResponse
 
 _LOGGER = logging.getLogger(__name__)
@@ -51,6 +56,9 @@ def _create_options_schema(user_input, is_config):
     schema.update(
         {
             vol.Optional(
+                CONF_PASSWORD, default=user_input.get(CONF_PASSWORD, "")
+            ): TextSelector(TextSelectorConfig(type=TextSelectorType.PASSWORD)),
+            vol.Optional(
                 CONF_SCAN_INTERVAL,
                 default=user_input.get(CONF_SCAN_INTERVAL, DEFAULT_POWER_SCAN_INTERVAL),
             ): vol.All(vol.Coerce(int), vol.Range(min=1, max=600)),
@@ -79,11 +87,18 @@ async def _async_get_property(projector, property, errors={}):
             # This shouldn't happen unless projector in some error state
             _LOGGER.exception("_async_get_property: Unsupported property: %s", e)
             errors["base"] = "cannot_connect"
+    except ProjectorAuthError:
+        errors["base"] = "invalid_auth"
     except asyncio.TimeoutError:
         errors["base"] = "cannot_find_projector"
     except Exception as e:
         _LOGGER.exception("_async_get_property: Unable to connect error: %s", e)
         errors["base"] = "cannot_connect"
+
+
+async def _async_validate_connection(projector, errors={}):
+    """Verify the projector can be connected to, e.g. that the password is correct."""
+    await _async_get_property(projector, PROPERTY_POWER, errors)
 
 
 async def _async_validate_additional_properties(projector, properties, errors={}):
@@ -169,6 +184,12 @@ class EpsonProjectorLinkOptionsFlowHandler(config_entries.OptionsFlow):
                 await _async_validate_additional_properties(
                     projector, user_input.get(CONF_POLL_PROPERTIES), errors
                 )
+            elif self._data.get(CONF_PASSWORD) != self._original_data.get(
+                CONF_PASSWORD
+            ):
+                # Properties are unchanged, but still verify a new password works
+                projector = create_projector(self._data)
+                await _async_validate_connection(projector, errors)
 
             if len(errors) == 0:
                 return self.async_create_entry(title="", data=self._data)

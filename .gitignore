@@ -4,4 +4,7 @@ pythonenv*
 .coverage
 venv
 .venv
+.vscode
 config/
+Epson-ESC-VP21 Command Guide.xlsx
+CHANGELOG.md

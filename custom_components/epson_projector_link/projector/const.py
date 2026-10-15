@@ -29,15 +29,29 @@ ESCVPNETNAME = "ESC/VP.net"
 # 1 uchar | type | 0x03 (CONNECT)
 # ushort | sequence number | 0x0
 # 1 byte | status | 0x0
-# 1 uchar | header count | 0x0"
-ESCVPNET_CONNECT_COMMAND = f"{ESCVPNETNAME}\x10\x03\x00\x00\x00\x00"
+# 1 uchar | header count | number of headers appended after this fixed header
+ESCVPNET_VERSION = 0x10
+ESCVPNET_TYPE_CONNECT = 0x03
+
+# Optional headers can be appended after the fixed connect header above, e.g.
+# to authenticate with the projector's remote password.
+# Password Header:
+# bytes | type  | meaning        | value
+# 1     | UCHAR | header type    | 0x01 (Password Header)
+# 1     | UCHAR | header value   | 0x01 (Attribute: Plain)
+# 16    | STR   | header content | password, padded with \x00 to 16 bytes
+PASSWORD_HEADER_TYPE = 0x01
+PASSWORD_HEADER_ATTRIBUTE_PLAIN = 0x01
+PASSWORD_HEADER_CONTENT_LENGTH = 16
 
 STATUS_OK = 0x20
+STATUS_UNAUTHORIZED = 0x41
+STATUS_FORBIDDEN = 0x43
 STATUS_CODE_MAP = {
     STATUS_OK: "OK",
     0x40: "Bad Request",
-    0x41: "Unauthorized",
-    0x43: "Forbidden",
+    STATUS_UNAUTHORIZED: "Unauthorized",
+    STATUS_FORBIDDEN: "Forbidden",
     0x45: "Service Unavailable",
     0x55: "Protocol Version Not Supported",
 }
@@ -47,10 +61,12 @@ STATUS_CODE_MAP = {
 #
 # Keep in sync with media_player.py PROPERTY_TO_ATTRIBUTE_NAME_MAP
 PROPERTY_AUTO_IRIS_MODE = "IRIS"
-PROPERTY_BRIGHTNESS = "BRIGHT"
 PROPERTY_COLOR_MODE = "CMODE"
 PROPERTY_ERR = "ERR"
+PROPERTY_FOCUS = "FOCUS"
 PROPERTY_LAMP_HOURS = "LAMP"
+PROPERTY_LENS_SHIFT_HORIZONTAL = "HLENS"
+PROPERTY_LENS_SHIFT_VERTICAL = "LENS"
 PROPERTY_MUTE = "MUTE"
 PROPERTY_POWER = "PWR"
 PROPERTY_POWER_CONSUMPTION_MODE = "LUMINANCE"
@@ -58,12 +74,15 @@ PROPERTY_SOURCE = "SOURCE"
 PROPERTY_SOURCE_LIST = "SOURCELIST"
 PROPERTY_SERIAL_NUMBER = "SNO"
 PROPERTY_VOLUME = "VOL"
+PROPERTY_ZOOM = "ZOOM"
 
 #
 # Commands
 #
 COMMAND_LOAD_LENS_MEMORY = "POPLP"
 COMMAND_LOAD_PICTURE_MEMORY = "POPMEM"
+COMMAND_PUSH_PICTURE_MEMORY = "PUSHMEM"
+COMMAND_ERASE_PICTURE_MEMORY = "ERASEMEM"
 
 COMMAND_MEDIA_PLAY = "KEY D1"
 COMMAND_MEDIA_STOP = "KEY D2"

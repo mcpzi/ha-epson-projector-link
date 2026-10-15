@@ -10,22 +10,62 @@
           "warmup": "Warmup"
         }
       }
+    },
+    "sensor": {
+      "error": {
+        "name": "Error"
+      },
+      "lamp_hours": {
+        "name": "Lamp hours"
+      },
+      "lens_shift_horizontal": {
+        "name": "Lens shift horizontal"
+      },
+      "lens_shift_vertical": {
+        "name": "Lens shift vertical"
+      },
+      "focus": {
+        "name": "Focus"
+      },
+      "zoom": {
+        "name": "Zoom"
+      }
+    },
+    "select": {
+      "auto_iris_mode": {
+        "name": "Auto iris mode"
+      },
+      "color_mode": {
+        "name": "Color mode"
+      },
+      "power_consumption_mode": {
+        "name": "Power consumption mode"
+      }
+    },
+    "switch": {
+      "power": {
+        "name": "Power"
+      }
     }
   },
   "config": {
     "error": {
       "cannot_connect": "Failed to connect",
       "cannot_find_projector": "Unable to find the projector. Make sure the projector is turned on or has network enabled in standby mode.",
+      "invalid_auth": "Invalid authentication",
       "projector_off": "Projector is off. Please turn it on.",
       "property_error_auto_iris_mode": "Property \"Auto Iris Mode\" is not supported or projector is off.",
-      "property_error_brightness": "Property \"Brightness\" is not supported or projector is off.",
       "property_error_color_mode": "Property \"Color Mode\" is not supported or projector is off.",
       "property_error_error": "Property \"Error\" is not supported or projector is off.",
+      "property_error_focus": "Property \"Focus\" is not supported or projector is off.",
       "property_error_lamp_hours": "Property \"Lamp Hours\" is not supported or projector is off.",
+      "property_error_lens_shift_horizontal": "Property \"Lens Shift Horizontal\" is not supported or projector is off.",
+      "property_error_lens_shift_vertical": "Property \"Lens Shift Vertical\" is not supported or projector is off.",
       "property_error_is_volume_muted": "Property \"Is Volume Muted\" is not supported or projector is off.",
       "property_error_power_consumption_mode": "Property \"Power Consumption Mode\" is not supported or projector is off.",
       "property_error_source": "Property \"Source\" is not supported or projector is off.",
-      "property_error_volume": "Property \"Volume\" is not supported or projector is off."
+      "property_error_volume": "Property \"Volume\" is not supported or projector is off.",
+      "property_error_zoom": "Property \"Zoom\" is not supported or projector is off."
     },
     "step": {
       "user": {
@@ -33,32 +73,44 @@
         "data": {
           "host": "Host",
           "name": "Name",
+          "password": "Password",
           "scan_interval": "Scan interval in seconds for power state",
           "poll_properties": "Additional properties to poll",
           "poll_properties_scan_interval": "Scan interval in seconds for additional properties"
+        },
+        "data_description": {
+          "password": "Only needed if a remote password is set on the projector (Menu > Network > Network Configuration > Basic > Remote Password)."
         }
       }
     }
   },
   "options": {
     "error": {
+      "invalid_auth": "Invalid authentication",
       "projector_off": "Projector is off. Please turn it on.",
       "property_error_auto_iris_mode": "Property \"Auto Iris Mode\" is not supported or projector is off.",
-      "property_error_brightness": "Property \"Brightness\" is not supported or projector is off.",
       "property_error_color_mode": "Property \"Color Mode\" is not supported or projector is off.",
+      "property_error_focus": "Property \"Focus\" is not supported or projector is off.",
       "property_error_lamp_hours": "Property \"Lamp Hours\" is not supported or projector is off.",
+      "property_error_lens_shift_horizontal": "Property \"Lens Shift Horizontal\" is not supported or projector is off.",
+      "property_error_lens_shift_vertical": "Property \"Lens Shift Vertical\" is not supported or projector is off.",
       "property_error_is_volume_muted": "Property \"Is Volume Muted\" is not supported or projector is off.",
       "property_error_power_consumption_mode": "Property \"Power Consumption Mode\" is not supported or projector is off.",
       "property_error_source": "Property \"Source\" is not supported or projector is off.",
-      "property_error_volume": "Property \"Volume\" is not supported or projector is off."
+      "property_error_volume": "Property \"Volume\" is not supported or projector is off.",
+      "property_error_zoom": "Property \"Zoom\" is not supported or projector is off."
     },
     "step": {
       "init": {
         "description": "Setup Epson Projector. **Make sure the projector is turned ON for setup if you are changing polled properties.**\n\nIf you want to get push notifications for power state, you must set projector to keep network on when off. For Home Cinema projector set **\"Standby Mode\"** to **\"Standby Mode: Communication On\"**. Only power state is pushed. All other properties are polled serially.",
         "data": {
+          "password": "Password",
           "scan_interval": "Scan interval in seconds for power state",
           "poll_properties": "Additional properties to poll",
           "poll_properties_scan_interval": "Scan interval in seconds for additional properties"
+        },
+        "data_description": {
+          "password": "Only needed if a remote password is set on the projector (Menu > Network > Network Configuration > Basic > Remote Password)."
         }
       }
     }

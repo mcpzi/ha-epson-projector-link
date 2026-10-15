@@ -12,7 +12,8 @@ from homeassistant.const import STATE_UNKNOWN
 from .const import AUTO_IRIS_MODE_CODE_MAP
 from .const import COLOR_MODE_CODE_MAP
 from .const import ESCVPNETNAME
-from .const import ESCVPNET_CONNECT_COMMAND
+from .const import ESCVPNET_TYPE_CONNECT
+from .const import ESCVPNET_VERSION
 from .const import IMEVENT
 from .const import IMEVENT_ALARM_BIT_MAP
 from .const import IMEVENT_STATUS_CODE_ABNORMAL
@@ -20,20 +21,26 @@ from .const import IMEVENT_STATUS_CODE_TO_POWER_MAP
 from .const import IMEVENT_WARNING_BIT_MAP
 from .const import OFF
 from .const import ON
+from .const import PASSWORD_HEADER_ATTRIBUTE_PLAIN
+from .const import PASSWORD_HEADER_CONTENT_LENGTH
+from .const import PASSWORD_HEADER_TYPE
 from .const import POWER_CODE_MAP
 from .const import POWER_CONSUMPTION_MODE_CODE_MAP
 from .const import PROPERTY_AUTO_IRIS_MODE
-from .const import PROPERTY_BRIGHTNESS
 from .const import PROPERTY_COLOR_MODE
 from .const import PROPERTY_ERR
 from .const import PROPERTY_ERR_CODE_MAP
+from .const import PROPERTY_FOCUS
 from .const import PROPERTY_LAMP_HOURS
+from .const import PROPERTY_LENS_SHIFT_HORIZONTAL
+from .const import PROPERTY_LENS_SHIFT_VERTICAL
 from .const import PROPERTY_MUTE
 from .const import PROPERTY_POWER
 from .const import PROPERTY_POWER_CONSUMPTION_MODE
 from .const import PROPERTY_SOURCE
 from .const import PROPERTY_SOURCE_LIST
 from .const import PROPERTY_VOLUME
+from .const import PROPERTY_ZOOM
 from .const import RESPONSE_ERROR
 from .const import SOURCE_CODE_MAP
 from .const import STATE_COOLDOWN
@@ -41,11 +48,14 @@ from .const import STATE_OFF
 from .const import STATE_ON
 from .const import STATE_WARMUP
 from .const import STATUS_CODE_MAP
+from .const import STATUS_FORBIDDEN
 from .const import STATUS_OK
+from .const import STATUS_UNAUTHORIZED
 from .const import TCP_PORT
 from .const import TIMEOUT_CONNECT
 from .const import TIMEOUT_POWER_ON_OFF
 from .const import TIMEOUT_REQUEST
+from .exceptions import ProjectorAuthError
 from .exceptions import ProjectorErrorResponse
 
 _LOGGER = logging.getLogger(__name__)
@@ -80,14 +90,17 @@ PROPERTY_PARSER_MAP = {
     PROPERTY_AUTO_IRIS_MODE: AUTO_IRIS_MODE_CODE_MAP.get,
     PROPERTY_COLOR_MODE: COLOR_MODE_CODE_MAP.get,
     PROPERTY_ERR: PROPERTY_ERR_CODE_MAP.get,
+    PROPERTY_FOCUS: int,
     PROPERTY_LAMP_HOURS: int,
-    PROPERTY_BRIGHTNESS: int,
+    PROPERTY_LENS_SHIFT_HORIZONTAL: int,
+    PROPERTY_LENS_SHIFT_VERTICAL: int,
     PROPERTY_MUTE: lambda v: v == ON,
     PROPERTY_POWER: POWER_PARSER,
     PROPERTY_POWER_CONSUMPTION_MODE: POWER_CONSUMPTION_MODE_CODE_MAP.get,
     PROPERTY_SOURCE: _get_source_name,
     PROPERTY_SOURCE_LIST: _parse_source_list,
     PROPERTY_VOLUME: int,
+    PROPERTY_ZOOM: int,
 }
 
 
@@ -96,13 +109,15 @@ class Projector:
     Epson Projector Home Cinema that connects using a TCP socket.
     """
 
-    def __init__(self, host, port=TCP_PORT):
+    def __init__(self, host, port=TCP_PORT, password=None):
         """
         :param str host:            IP address of Projector
         :param int port:            Port to connect to
+        :param str password:        Projector remote password, if one is configured
         """
         self._host = host
         self._port = port
+        self._password = password
         self._is_open = False
         self._has_errors = False
         self._serial = None
@@ -118,6 +133,27 @@ class Projector:
     def set_callback(self, callback):
         self._callback = callback
 
+    def _build_connect_command(self):
+        """Build the ESC/VP.net CONNECT request, with a password header if configured."""
+        has_password = bool(self._password)
+        command = bytearray(ESCVPNETNAME.encode())
+        command += bytes(
+            [
+                ESCVPNET_VERSION,
+                ESCVPNET_TYPE_CONNECT,
+                0x00,  # sequence number (high byte)
+                0x00,  # sequence number (low byte)
+                0x00,  # status
+                1 if has_password else 0,  # header count
+            ]
+        )
+        if has_password:
+            password_bytes = self._password.encode()[:PASSWORD_HEADER_CONTENT_LENGTH]
+            password_bytes = password_bytes.ljust(PASSWORD_HEADER_CONTENT_LENGTH, b"\x00")
+            command += bytes([PASSWORD_HEADER_TYPE, PASSWORD_HEADER_ATTRIBUTE_PLAIN])
+            command += password_bytes
+        return bytes(command)
+
     async def connect(self):
         """Async init to open connection with projector."""
         _LOGGER.debug("connect")
@@ -127,7 +163,7 @@ class Projector:
                 reader, writer = await asyncio.open_connection(
                     host=self._host, port=self._port
                 )
-                writer.write(ESCVPNET_CONNECT_COMMAND.encode())
+                writer.write(self._build_connect_command())
                 response = await reader.read(16)
         except asyncio.TimeoutError:
             _LOGGER.exception("connect: Opening connection timed out")
@@ -157,6 +193,11 @@ class Projector:
             status,
             header_count,
         )
+        if status_code in (STATUS_UNAUTHORIZED, STATUS_FORBIDDEN):
+            raise ProjectorAuthError(
+                f"Connect response returned error status={status}. "
+                "Check the configured remote password."
+            )
         if status_code != STATUS_OK:
             raise Exception(f"Connect response returned error status={status}")
 
